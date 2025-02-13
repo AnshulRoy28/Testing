@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valentine's Day 3D Heart</title>
+  <style>
+    /* Import a romantic cursive font */
+    @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(45deg, #ff7eb3, #ff758c);
+      overflow: hidden;
+      font-family: 'Dancing Script', cursive;
+      user-select: none; /* Disable text selection */
+    }
+
+    /* Sparkling stars animation */
+    @keyframes twinkle {
+      0%, 100% {
+        opacity: 0.5;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .stars {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .stars span {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+      animation: twinkle 2s infinite ease-in-out;
+    }
+
+    /* Floating hearts animation */
+    @keyframes floatHearts {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+      }
+      100% {
+        transform: translateY(-10vh) rotate(360deg);
+      }
+    }
+
+    .floating-hearts {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .floating-hearts span {
+      position: absolute;
+      font-size: 24px;
+      color: #ff4757;
+      animation: floatHearts linear infinite;
+    }
+
+    /* Heart design */
+    .heart {
+      position: relative;
+      width: 200px;
+      height: 180px;
+      animation: heartbeat 1.5s infinite;
+      filter: drop-shadow(0 0 15px rgba(255, 71, 87, 0.8));
+    }
+
+    .heart::before,
+    .heart::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: 100px;
+      height: 160px;
+      background: radial-gradient(circle, #ff4757 30%, #ff2d55 70%);
+      border-radius: 50px 50px 0 0;
+      box-shadow: 0 0 20px rgba(255, 71, 87, 0.7);
+    }
+
+    .heart::before {
+      left: 100px;
+      transform: rotate(-45deg);
+      transform-origin: 0 100%;
+    }
+
+    .heart::after {
+      left: 0;
+      transform: rotate(45deg);
+      transform-origin: 100% 100%;
+    }
+
+
+
+
+
+    .heart .hollow::before {
+      left: 50px;
+      transform: rotate(-45deg);
+      transform-origin: 0 100%;
+    }
+
+    .heart .hollow::after {
+      left: 0;
+      transform: rotate(45deg);
+      transform-origin: 100% 100%;
+    }
+
+    /* Glossy shine effect */
+    .heart .shine {
+      position: absolute;
+      top: 20px; /* Adjusted position */
+      left: 50px;
+      width: 50px;
+      height: 50px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0));
+      border-radius: 50%;
+      transform: rotate(45deg);
+      z-index: 2;
+    }
+
+    /* Heartbeat animation */
+    @keyframes heartbeat {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    /* Text styling */
+    .text {
+      position: absolute;
+      bottom: 15%;
+      font-size: 36px;
+      color: white;
+      text-shadow: 0 0 10px rgba(255, 71, 87, 0.7);
+      animation: float 3s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+  </style>
+  <!-- Confetti library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+  <!-- Sparkling stars -->
+  <div class="stars">
+    <script>
+      // Generate 50 sparkling stars
+      for (let i = 0; i < 150; i++) {
+        let star = document.createElement("span");
+        star.style.top = Math.random() * 100 + "%";
+        star.style.left = Math.random() * 100 + "%";
+        star.style.animationDelay = Math.random() * 2 + "s"; // Randomize animation delay
+        document.querySelector(".stars").appendChild(star);
+      }
+    </script>
+  </div>
+
+  <!-- Floating hearts -->
+  <div class="floating-hearts">
+    <script>
+      // Generate random floating hearts
+      for (let i = 0; i < 30; i++) {
+        let heart = document.createElement("span");
+        heart.innerHTML = "❤️";
+        heart.style.left = Math.random() * 100 + "%"; // Random horizontal position
+        heart.style.fontSize = Math.random() * 24 + 16 + "px"; // Random size
+        heart.style.animationDuration = Math.random() * 10 + 5 + "s"; // Random speed
+        heart.style.animationDelay = Math.random() * 5 + "s"; // Random delay
+        document.querySelector(".floating-hearts").appendChild(heart);
+      }
+    </script>
+  </div>
+
+  <!-- Heart -->
+  <div class="heart">
+    <div class="hollow"></div>
+    <div class="shine"></div>
+  </div>
+
+  <!-- Text -->
+  <div class="text">Happy Valentine's Day!</div>
+
+  <!-- Music -->
+  <audio autoplay loop>
+    <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Confetti script -->
+  <script>
+    document.addEventListener('click', () => {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+      confetti({
+        particleCount: 50,
+        spread: 100,
+        origin: { y: 0.4 },
+        colors: ['#ff1493', '#ff69b4', '#ffc0cb']
+      });
+    });
+  </script>
+</body>
+</html>
