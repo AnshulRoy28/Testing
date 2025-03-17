@@ -3,7 +3,7 @@ from pyPS4Controller.controller import Controller
 class MyController(Controller):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.dead_zone = 1000  # Ignore small drift values
+        self.dead_zone = 3000  # Ignore small drift values
         self.l3_active = False  # Track if joystick is being held
         self.r3_active = False
 
