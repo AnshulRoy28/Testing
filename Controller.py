@@ -7,14 +7,14 @@ class MyController(Controller):
 
         # Define ignored drift values for each joystick direction
         self.ignored_l3_up = {-775, -259, -1033, -517}
-        self.ignored_l3_down = {-775, -259, -1033, -517}
-        self.ignored_l3_left = {-1549, -1807, -775, -1033}
-        self.ignored_l3_right = {1549, 1807, 775, 1033}
+        self.ignored_l3_down = {-775,774,516,258, -259, -1033, -517}
+        self.ignored_l3_left = {-1549,-517, -1807, -775, -1033}
+        self.ignored_l3_right = {1548,1290, 1807,516,258, 774, 1032}
 
         self.ignored_r3_up = {-775, -259, -1033, -517}
         self.ignored_r3_down = {-775, -259, -1033, -517}
         self.ignored_r3_left = {-1549, -1807, -775, -1033}
-        self.ignored_r3_right = {1032, 774, 2064, 2322, 1290}
+        self.ignored_r3_right = {1032,1806, 774,1548, 2064, 2322, 1290}
 
     # L3 Joystick (Movement)
     def on_L3_up(self, value):
