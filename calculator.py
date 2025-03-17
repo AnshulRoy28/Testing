@@ -1,109 +1,80 @@
-from pyPS4Controller.controller import Controller
+import RPi.GPIO as GPIO
+import time
+from my_controller import MyController  # Import your PS4 controller class
 
-class MyController(Controller):
+# Define GPIO pins
+PWM_LEFT = 18  # Example PWM pin for left motor
+DIR_LEFT = 23  # Example Direction pin for left motor
+PWM_RIGHT = 19  # Example PWM pin for right motor
+DIR_RIGHT = 24  # Example Direction pin for right motor
+
+# Setup GPIO
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(PWM_LEFT, GPIO.OUT)
+GPIO.setup(DIR_LEFT, GPIO.OUT)
+GPIO.setup(PWM_RIGHT, GPIO.OUT)
+GPIO.setup(DIR_RIGHT, GPIO.OUT)
+
+# Create PWM instances
+pwm_left = GPIO.PWM(PWM_LEFT, 1000)  # 1 kHz frequency
+pwm_right = GPIO.PWM(PWM_RIGHT, 1000)
+pwm_left.start(0)  # Start with 0% duty cycle
+pwm_right.start(0)
+
+class MotorController(MyController):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.dead_zone = 3000  # Ignore small drift values
-        self.l3_active = False  # Track if joystick is being held
-        self.r3_active = False
-
-    def apply_dead_zone(self, value):
-        """Ignore small movements to reduce drift."""
-        return value if abs(value) > self.dead_zone else 0
-
-    # L3 Joystick (Movement)
+    
     def on_L3_up(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.l3_active = True
-            print(f"L3 Moving Forward: {value}")
-        else:
-            self.l3_active = False
-            print("L3 Stopped Moving Forward")
-
+        speed = abs(value) / 32767 * 100  # Normalize value to 0-100%
+        GPIO.output(DIR_LEFT, GPIO.HIGH)
+        GPIO.output(DIR_RIGHT, GPIO.HIGH)
+        pwm_left.ChangeDutyCycle(speed)
+        pwm_right.ChangeDutyCycle(speed)
+        
     def on_L3_down(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.l3_active = True
-            print(f"L3 Moving Backward: {value}")
-        else:
-            self.l3_active = False
-            print("L3 Stopped Moving Backward")
-
-    def on_L3_left(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.l3_active = True
-            print(f"L3 Moving Left: {value}")
-        else:
-            self.l3_active = False
-            print("L3 Stopped Moving Left")
-
-    def on_L3_right(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.l3_active = True
-            print(f"L3 Moving Right: {value}")
-        else:
-            self.l3_active = False
-            print("L3 Stopped Moving Right")
-
-    def on_L3_x_at_rest(self):
-        """L3 joystick is at rest (centered)."""
-        self.l3_active = False
-        print("L3 Joystick at Rest")
-
-    def on_L3_y_at_rest(self):
-        self.l3_active = False
-        print("L3 Joystick at Rest")
-
-    # R3 Joystick (Rotation)
-    def on_R3_up(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.r3_active = True
-            print(f"R3 Looking Up: {value}")
-        else:
-            self.r3_active = False
-            print("R3 Stopped Looking Up")
-
-    def on_R3_down(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.r3_active = True
-            print(f"R3 Looking Down: {value}")
-        else:
-            self.r3_active = False
-            print("R3 Stopped Looking Down")
+        speed = abs(value) / 32767 * 100
+        GPIO.output(DIR_LEFT, GPIO.LOW)
+        GPIO.output(DIR_RIGHT, GPIO.LOW)
+        pwm_left.ChangeDutyCycle(speed)
+        pwm_right.ChangeDutyCycle(speed)
 
     def on_R3_left(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.r3_active = True
-            print(f"R3 Rotating Left: {value}")
-        else:
-            self.r3_active = False
-            print("R3 Stopped Rotating Left")
+        speed = abs(value) / 32767 * 100
+        GPIO.output(DIR_LEFT, GPIO.LOW)
+        GPIO.output(DIR_RIGHT, GPIO.HIGH)
+        pwm_left.ChangeDutyCycle(speed)
+        pwm_right.ChangeDutyCycle(speed)
 
     def on_R3_right(self, value):
-        value = self.apply_dead_zone(value)
-        if value:
-            self.r3_active = True
-            print(f"R3 Rotating Right: {value}")
-        else:
-            self.r3_active = False
-            print("R3 Stopped Rotating Right")
+        speed = abs(value) / 32767 * 100
+        GPIO.output(DIR_LEFT, GPIO.HIGH)
+        GPIO.output(DIR_RIGHT, GPIO.LOW)
+        pwm_left.ChangeDutyCycle(speed)
+        pwm_right.ChangeDutyCycle(speed)
+
+    def on_L3_x_at_rest(self):
+        pwm_left.ChangeDutyCycle(0)
+        pwm_right.ChangeDutyCycle(0)
+
+    def on_L3_y_at_rest(self):
+        pwm_left.ChangeDutyCycle(0)
+        pwm_right.ChangeDutyCycle(0)
 
     def on_R3_x_at_rest(self):
-        """R3 joystick is at rest (centered)."""
-        self.r3_active = False
-        print("R3 Joystick at Rest")
+        pwm_left.ChangeDutyCycle(0)
+        pwm_right.ChangeDutyCycle(0)
 
     def on_R3_y_at_rest(self):
-        self.r3_active = False
-        print("R3 Joystick at Rest")
-
+        pwm_left.ChangeDutyCycle(0)
+        pwm_right.ChangeDutyCycle(0)
 
 if __name__ == "__main__":
-    controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)
-    controller.listen()
+    try:
+        controller = MotorController(interface="/dev/input/js0", connecting_using_ds4drv=False)
+        controller.listen()
+    except KeyboardInterrupt:
+        print("Exiting...")
+        pwm_left.stop()
+        pwm_right.stop()
+        GPIO.cleanup()
