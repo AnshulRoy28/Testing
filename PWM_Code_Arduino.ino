@@ -295,14 +295,14 @@ void pumpMode(){
 
 
 void raiseArm(){
-  Serial.println("Raising lauda");
+  Serial.println("Raising arm");
   myservo.write(pos);
   pos+=10;
 
 }
 
 void lowerArm(){
-  Serial.println("Lowering Lauda");
+  Serial.println("Lowering arm");
   myservo.write(pos);
   pos-=10;
 }
