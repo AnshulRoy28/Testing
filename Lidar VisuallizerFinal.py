@@ -1,92 +1,86 @@
-import serial
-import serial.tools.list_ports
+import YdLidarX2 as ydlidar_x2
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backend_bases import MouseEvent
-import tkinter as tk
-from tkinter import simpledialog
 import os
-import YdLidarX2 as ydlidar_x2
 
-# Auto-detect the correct port for CP210x
-def find_cp210x_device():
-    ports = serial.tools.list_ports.comports()
-    for port in ports:
-        if "CP210" in port.description:  # Check if it's CP210x UART Bridge
-            return port.device  
-    return None
-
-port = find_cp210x_device()
-
-if not port:
-    print("Error: CP210x UART Bridge device not found!")
-    exit()
-
-print(f"Connecting to YDLidarX2 on {port}...")
+# Lidar setup
+port = '/dev/ttyUSB0'
 lid = ydlidar_x2.YDLidarX2(port)
-
-# Ensure files exist
-for file_name in ["Object_1_Readings.txt", "Object_2_Readings.txt"]:
-    if not os.path.exists(file_name):
-        with open(file_name, "w") as f:
-            f.write("Angle (radians), Distance (mm)\n")
+  
+# File setup
+file_path = "Lidar Readings.txt"
+if not os.path.exists(file_path):
+    with open(file_path, "w") as f:
+        f.write("Angle (radians), Distance (mm)\n")  # Write header if file is newly created
 
 # Check connection
 if lid.connect():
-    print("Connected successfully.")
+    print("Connected to YDLidarX2 on port", port)
     lid.start_scan()
 
     # Visualization setup
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    ax.set_theta_zero_location('N')
-    ax.set_theta_direction(-1)
+    ax.set_theta_zero_location('N')  # North at the top
+    ax.set_theta_direction(-1)  # Clockwise
     scatter = ax.scatter([], [], s=10, c='blue', label="Distance Points")
-    ax.set_rmax(7000)
+    ax.set_rmax(7000)  # Set the maximum range (in mm)
 
-    # Laser pointer setup
+    # Initialize laser pointer (in polar coordinates)
     laser_line, = ax.plot([], [], color='red', label="Laser Pointer")
     laser_distance_text = ax.text(0.5, 0.9, "", transform=ax.transAxes, ha='center', va='center')
 
     # Timer text
     timer_text = ax.text(0.5, 0.85, "", transform=ax.transAxes, ha='center', va='center', color='green')
 
-    # Storage for laser pointer data
+    # Create a dictionary to store laser pointer data
     laser_data = {'angle': None, 'distance': None}
 
-    # Sampling rate
+    # Variables to control sampling
     last_sample_time = time.time()
-    sampling_interval = 1 / 100  # 100 Hz
+    sampling_interval = 1 / 100  # seconds
 
     # Function to update plot
     def update(frame):
         global last_sample_time
         current_time = time.time()
 
-        # Show next sample timer
+        # Calculate remaining time for the next sample
         time_remaining = max(0, sampling_interval - (current_time - last_sample_time))
         timer_text.set_text(f"Next sample in: {time_remaining:.1f}s")
 
+        # Only sample if the interval has passed
         if current_time - last_sample_time >= sampling_interval:
             if lid.available:
                 data = lid.get_data()
-                angles = np.radians(np.arange(len(data)))  # Convert to radians
+                angles = np.radians(np.arange(len(data)))  # Convert angles to radians
                 distances = np.array(data)
 
-                # Remove invalid readings
+                # Filter invalid distances
                 valid = distances > 0
-                angles, distances = angles[valid], distances[valid]
+                angles = angles[valid]
+                distances = distances[valid]
 
-                # Update scatter plot
+                # Save readings to file
+                with open(file_path, "a") as f:
+                    for angle, distance in zip(angles, distances):
+                        f.write(f"{angle}, {distance}\n")
+
+                print("Saved Lidar readings to file.")
+
+                # Update scatter plot with lidar points
                 scatter.set_offsets(np.c_[angles, distances])
 
-                # Update laser pointer if set
+                # Update laser pointer if a position is selected
                 if laser_data['angle'] is not None:
+                    # Find the closest lidar point to the laser pointer
                     angle_diff = np.abs(angles - laser_data['angle'])
                     closest_idx = np.argmin(angle_diff)
                     laser_data['distance'] = distances[closest_idx]
 
+                    # Update laser pointer position (polar coordinates)
                     laser_line.set_data([laser_data['angle'], laser_data['angle']], [0, laser_data['distance']])
                     laser_distance_text.set_text(f"Distance: {laser_data['distance']} mm")
 
@@ -94,51 +88,31 @@ if lid.connect():
 
         return scatter, laser_line, laser_distance_text, timer_text
 
-    # Mouse click event
+    # Mouse event to capture the laser pointer direction
     def on_click(event: MouseEvent):
         if event.inaxes == ax:
-            if event.button == 1:  # Left Click - Move pointer
-                laser_data['angle'] = event.xdata
-                if laser_data['angle'] < 0:
-                    laser_data['angle'] += 2 * np.pi  
-                update(0)
+            # Get the angle in radians where the mouse was clicked
+            laser_data['angle'] = event.xdata
+            if laser_data['angle'] < 0:
+                laser_data['angle'] += 2 * np.pi  # Ensure angle is positive
 
-            elif event.button == 3:  # Right Click - Save data
-                if laser_data['angle'] is None or laser_data['distance'] is None:
-                    print("Error: No laser pointer set. Left-click first.")
-                    return
-
-                # Ask user which object this reading is for
-                root = tk.Tk()
-                root.withdraw()  # Hide root window
-                choice = simpledialog.askstring("Save Distance", "Enter Object Number (1 or 2):")
-
-                if choice == "1":
-                    file_name = "Object_1_Readings.txt"
-                elif choice == "2":
-                    file_name = "Object_2_Readings.txt"
-                else:
-                    print("Invalid selection. Data not saved.")
-                    return
-
-                with open(file_name, "a") as f:
-                    f.write(f"{laser_data['angle']}, {laser_data['distance']}\n")
-
-                print(f"Saved to {file_name}: Angle={laser_data['angle']:.2f}, Distance={laser_data['distance']:.2f}")
+            # Trigger plot update
+            update(0)
 
     fig.canvas.mpl_connect('button_press_event', on_click)
 
-    ani = FuncAnimation(fig, update, interval=1)  # Refresh every 1ms
+    ani = FuncAnimation(fig, update, interval=1)  # Update every 1ms
 
     try:
         plt.legend(loc='upper right')
         plt.title("Real-Time Lidar Visualization with Laser Pointer")
         plt.show()
     except KeyboardInterrupt:
-        print("Visualization interrupted.")
+        print("Visualization interrupted by user.")
     finally:
         lid.stop_scan()
         lid.disconnect()
-        print("Lidar stopped. Exiting.")
+        print("Lidar stopped and disconnected. Done.")
 else:
-    print("Failed to connect to Lidar.")
+    print(f"Failed to connect to YDLidarX2 on port {port}")
+
