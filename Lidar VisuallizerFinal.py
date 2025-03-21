@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.backend_bases import MouseEvent
+import tkinter as tk
+from tkinter import simpledialog
 import os
 import YdLidarX2 as ydlidar_x2
 
@@ -25,11 +27,11 @@ if not port:
 print(f"Connecting to YDLidarX2 on {port}...")
 lid = ydlidar_x2.YDLidarX2(port)
 
-# File setup
-file_path = "Lidar_Readings.txt"
-if not os.path.exists(file_path):
-    with open(file_path, "w") as f:
-        f.write("Angle (radians), Distance (mm)\n")  # Header if file is new
+# Ensure files exist
+for file_name in ["Object_1_Readings.txt", "Object_2_Readings.txt"]:
+    if not os.path.exists(file_name):
+        with open(file_name, "w") as f:
+            f.write("Angle (radians), Distance (mm)\n")
 
 # Check connection
 if lid.connect():
@@ -76,13 +78,6 @@ if lid.connect():
                 valid = distances > 0
                 angles, distances = angles[valid], distances[valid]
 
-                # Save readings to file
-                with open(file_path, "a") as f:
-                    for angle, distance in zip(angles, distances):
-                        f.write(f"{angle}, {distance}\n")
-
-                print("Lidar readings saved.")
-
                 # Update scatter plot
                 scatter.set_offsets(np.c_[angles, distances])
 
@@ -99,20 +94,37 @@ if lid.connect():
 
         return scatter, laser_line, laser_distance_text, timer_text
 
-    # Mouse click event to log laser pointer position
+    # Mouse click event
     def on_click(event: MouseEvent):
         if event.inaxes == ax:
-            laser_data['angle'] = event.xdata
-            if laser_data['angle'] < 0:
-                laser_data['angle'] += 2 * np.pi  
+            if event.button == 1:  # Left Click - Move pointer
+                laser_data['angle'] = event.xdata
+                if laser_data['angle'] < 0:
+                    laser_data['angle'] += 2 * np.pi  
+                update(0)
 
-            # Save clicked point to a separate file
-            with open("Mouse_Clicked_Readings.txt", "a") as f:
-                f.write(f"{laser_data['angle']}, {laser_data['distance']}\n")
-            
-            print(f"Saved mouse click: Angle={laser_data['angle']:.2f}, Distance={laser_data['distance']:.2f}")
+            elif event.button == 3:  # Right Click - Save data
+                if laser_data['angle'] is None or laser_data['distance'] is None:
+                    print("Error: No laser pointer set. Left-click first.")
+                    return
 
-            update(0)
+                # Ask user which object this reading is for
+                root = tk.Tk()
+                root.withdraw()  # Hide root window
+                choice = simpledialog.askstring("Save Distance", "Enter Object Number (1 or 2):")
+
+                if choice == "1":
+                    file_name = "Object_1_Readings.txt"
+                elif choice == "2":
+                    file_name = "Object_2_Readings.txt"
+                else:
+                    print("Invalid selection. Data not saved.")
+                    return
+
+                with open(file_name, "a") as f:
+                    f.write(f"{laser_data['angle']}, {laser_data['distance']}\n")
+
+                print(f"Saved to {file_name}: Angle={laser_data['angle']:.2f}, Distance={laser_data['distance']:.2f}")
 
     fig.canvas.mpl_connect('button_press_event', on_click)
 
